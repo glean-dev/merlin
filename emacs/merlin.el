@@ -586,7 +586,7 @@ return (LOC1 . LOC2)."
 When the command finishes without being deleted, executes the callback with parsed output as single argument
 - if it is a success, argument is a cons cell with the sexp-result as car
 - if failure, argument is a single string as an error message
-- see merlin/callback-parse-result for convenience"
+- see `merlin/callback-parse-result' for convenience"
   (cl-letf (((symbol-function #'merlin--call-process)
              (apply-partially #'merlin--call-process-async callback)))
     (merlin--call-merlin command args)))
@@ -947,6 +947,56 @@ prefix of `bar' is `'."
                         (string-prefix-p suffix name)))
            collect (append x '((kind . "Label") (info . nil)))))
 
+(defun merlin--complete (callback ident suffix result)
+  "Some docs one day."
+  (let* (;; (data (merlin/callback-parse-result result))
+         (data result)
+         ;; all classic entries
+         (entries (cdr (assoc 'entries data)))
+         ;; context is 'null or ('application ...)
+         (context (cdr (assoc 'context data)))
+         (application (and (listp context)
+                           (equal (car context) "application")
+                           (cadr context)))
+         ;; Argument-type
+         (expected-ty (and application
+                           (not (string-equal "'_a"
+                                  (cdr (assoc 'argument_type application))))
+                           (cdr (assoc 'argument_type application))))
+         ;; labels
+         (labels (and application (cdr (assoc 'labels application)))))
+    (message "in merlin--complete")
+    (setq labels (merlin--completion-prepare-labels labels suffix))
+    ;; DWIM completion
+    (when (and merlin-completion-dwim (not labels) (not entries))
+      (setq data (merlin/call "expand-prefix"
+                              "-position" (merlin/unmake-point (point))
+                              "-prefix" ident))
+      (setq entries (cdr (assoc 'entries data)))
+      (setq-local merlin--dwimed t))
+    ;; Concat results
+    (let ((result (append labels entries)))
+      (funcall callback
+               (if expected-ty
+                   (cl-loop for x in result
+                            collect (append x `((argument_type . ,expected-ty))))
+                 result)))))
+
+(defun merlin/complete-async (ident callback)
+  "Async version of `merlin/complete'. Passes the results of the
+  merlin call to CALLBACK."
+  (setq-local merlin--dwimed nil)
+  (let* ((merlin/verbosity-context t) ; increase verbosity level if necessary
+         (ident- (merlin/completion-split-ident ident))
+         (suffix (cdr ident-)))
+    (message "merlin/complete-async")
+    (merlin/call-async
+     (apply-partially #'merlin--complete callback ident suffix)
+     "complete-prefix"
+     "-position" (merlin/unmake-point (point))
+     "-prefix" ident
+     "-doc" (if merlin-completion-with-doc "y" "n"))))
+
 (defun merlin/complete (ident)
   "Return the data for completion of IDENT, i.e. a list of tuples of the form
   '(NAME TYPE KIND INFO)."
@@ -969,7 +1019,7 @@ prefix of `bar' is `'."
          ;; Argument-type
          (expected-ty (and application
                            (not (string-equal "'_a"
-                                  (cdr (assoc 'argument_type application))))
+                                              (cdr (assoc 'argument_type application))))
                            (cdr (assoc 'argument_type application))))
          ;; labels
          (labels (and application (cdr (assoc 'labels application)))))

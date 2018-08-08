@@ -80,6 +80,22 @@
                " (successive calls will expand aliases)"))
       (t default))))
 
+(defun merlin--completion-candidates (arg callback)
+  ""
+  (message "in callback with %s" arg)
+  (merlin/complete-async
+   arg
+   (lambda (entries)
+     (funcall callback
+              (cl-loop
+               for x in entries
+               collect
+               (propertize (merlin/completion-entry-text (merlin/completion-prefix arg) x)
+                           'merlin-compl-type
+                           (merlin/completion-entry-short-description x)
+                           'merlin-arg-type (cdr (assoc 'argument_type x))
+                           'merlin-compl-doc (cdr (assoc 'info x))))))))
+
 ;; Public functions
 ;;;###autoload
 (defun merlin-company-backend (command &optional arg &rest ignored)
@@ -109,14 +125,9 @@
                      (linum (cdr (assoc 'line (assoc 'pos data)))))
                  (cons filename linum))))))
         (candidates
-         (let ((prefix (merlin/completion-prefix arg)))
-           (cl-loop for x in (merlin/complete arg)
-                    collect
-                    (propertize (merlin/completion-entry-text prefix x)
-                                'merlin-compl-type
-                                (merlin/completion-entry-short-description x)
-                                'merlin-arg-type (cdr (assoc 'argument_type x))
-                                'merlin-compl-doc (cdr (assoc 'info x))))))
+         (setq argcopy arg)
+         (message "in candidates with %s" argcopy)
+         (cons :async (lambda (cb) (merlin--completion-candidates argcopy cb))))
         (post-completion
          (let ((minibuffer-message-timeout nil))
            (minibuffer-message "%s : %s" arg (merlin-company--get-candidate-type arg))))
