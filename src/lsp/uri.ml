@@ -1,3 +1,5 @@
+open Result
+
 type t = string [@@deriving yojson { strict = false }]
 
 let to_path (uri : t) =

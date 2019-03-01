@@ -1,3 +1,5 @@
+open Result
+
 type t
 
 val of_yojson : Yojson.Safe.json -> (t, string) result

@@ -1,3 +1,5 @@
+open Result
+
 module Result = struct
 
   let bind x ~f =

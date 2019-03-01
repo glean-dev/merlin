@@ -24,4 +24,4 @@ depends: [
   "mdx" {test & >= "1.2.0"}
 ]
 
-available: [ ocaml-version >= "4.04.0" & ocaml-version < "4.08" ]
+available: [ ocaml-version >= "4.02.1" & ocaml-version < "4.08" ]

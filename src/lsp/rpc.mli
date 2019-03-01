@@ -2,6 +2,8 @@
  * This encodes LSP RPC state machine.
  *)
 
+open Result
+
 module Server_notification : sig
   open Protocol
 

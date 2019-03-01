@@ -1,3 +1,5 @@
+open Result
+
 type t = {
   ic : in_channel;
   oc : out_channel;
@@ -41,7 +43,7 @@ module Headers = struct
 
   let has_content_length s =
     String.length s > content_length_len &&
-    String.equal (String.sub s 0 content_length_len) content_length
+    (String.sub s 0 content_length_len) = content_length
 
   let parse_content_length line =
     let v =
@@ -56,7 +58,7 @@ module Headers = struct
     | Done of t
 
   let parse_line headers line =
-    if String.equal line "\r\n"
+    if line = "\r\n"
     then Done headers
     else
       if has_content_length line

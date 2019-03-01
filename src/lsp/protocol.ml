@@ -7,6 +7,8 @@
  *
  *)
 
+open Result
+
 type documentUri = Uri.t [@@deriving yojson]
 
 type zero_based_int = int [@@deriving yojson]
